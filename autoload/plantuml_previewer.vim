@@ -129,7 +129,7 @@ function! s:fmt_to_ext(fmt) "{{{
 endfunction "}}}
 
 function! s:run_in_background(cmd) "{{{
-  if s:Job.is_available()
+  if s:Job.is_available() && !s:is_win
     call s:Job.start(a:cmd)
   else
     try
