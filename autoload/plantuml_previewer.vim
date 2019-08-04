@@ -1,29 +1,54 @@
-let s:Process = vital#plantuml_previewer#new().import('System.Process')
-let s:Job = vital#plantuml_previewer#new().import('System.Job')
+scriptencoding utf-8
+
+let s:save_cpo = &cpo
+set cpo&vim
+
+let s:Process  = vital#plantuml_previewer#import('System.Process')
+let s:Job      = vital#plantuml_previewer#import('System.Job')
+let s:Filepath = vital#plantuml_previewer#import('System.Filepath')
+
 let s:is_win = has('win32') || has('win64') || has('win95')
 
-let s:base_path = expand("<sfile>:p:h") . '/..'
+let s:base_path = s:Filepath.abspath(expand("<sfile>:p:h:h"))
 
-let s:default_jar_path = s:base_path . '/lib/plantuml.jar'
+let s:default_jar_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'lib' .  s:Filepath.separator() .
+      \ 'plantuml.jar')
 
-let s:tmp_path = s:base_path . '/tmp'
+let s:tmp_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'tmp')
 
-let s:save_as_script_path = s:base_path . '/script/save-as' . (s:is_win ? '.cmd' : '.sh')
-let s:save_as_tmp_puml_path = s:tmp_path . '/tmp.puml'
+let s:save_as_script_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'script' .  s:Filepath.separator() .
+      \ 'save-as' . (s:is_win ? '.cmd' : '.sh'))
+let s:save_as_tmp_puml_path = s:Filepath.realpath(
+      \ s:tmp_path . s:Filepath.separator() .
+      \ 'tmp.puml')
 
-let s:update_viewer_script_path = s:base_path . '/script/update-viewer' . (s:is_win ? '.cmd' : '.sh')
-let s:viewer_base_path = s:base_path . '/viewer'
-let s:viewer_tmp_puml_path = s:viewer_base_path . '/tmp.puml'
-let s:viewer_tmp_svg_path = s:viewer_base_path . '/tmp.svg'
-let s:viewer_tmp_js_path = s:viewer_base_path . '/tmp.js'
-let s:viewer_html_path = s:viewer_base_path . '/dist/index.html'
+let s:update_viewer_script_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'script' .  s:Filepath.separator() .
+      \ 'update-viewer' . (s:is_win ? '.cmd' : '.sh'))
+let s:viewer_base_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'viewer')
+let s:viewer_tmp_puml_path = s:Filepath.realpath( s:viewer_base_path . s:Filepath.separator() . 'tmp.puml'         )
+let s:viewer_tmp_svg_path  = s:Filepath.realpath( s:viewer_base_path . s:Filepath.separator() . 'tmp.svg'          )
+let s:viewer_tmp_js_path   = s:Filepath.realpath( s:viewer_base_path . s:Filepath.separator() . 'tmp.js'           )
+let s:viewer_html_path     = s:Filepath.realpath(
+      \ s:viewer_base_path . s:Filepath.separator() .
+      \ 'dist' . s:Filepath.separator() .
+      \ 'index.html')
 
 function! plantuml_previewer#start() "{{{
   if !executable('java')
     echoerr 'require java'
     return
   endif
-  if !exists('*OpenBrowser') 
+  if !exists('*OpenBrowser')
     echoerr 'require openbrowser'
     return
   endif
@@ -96,10 +121,10 @@ function! plantuml_previewer#save_as(...) "{{{
   let save_path = get(a:000, 0, 0)
   let target_format = get(a:000, 1, 0)
   if s:is_zero(save_path)
-    let source_name = expand('%:t:r')
+    let source_name = s:Filepath.abspath(expand('%:t:r'))
     let save_path = printf("%s.%s", source_name, s:fmt_to_ext(s:save_format()))
   else
-    let save_path = fnamemodify(save_path, ':p')
+    let save_path = s:Filepath.abspath(save_path)
   endif
   if s:is_zero(target_format)
     let ext = fnamemodify(save_path, ':e')
@@ -120,3 +145,6 @@ function! plantuml_previewer#save_as(...) "{{{
         \ ]
   call s:run_in_background(cmd)
 endfunction "}}}
+
+let &cpo = s:save_cpo
+unlet s:save_cpo
