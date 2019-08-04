@@ -107,6 +107,7 @@ function! plantuml_previewer#refresh() "{{{
   let content = getline(1,'$')
   call writefile(content, s:viewer_tmp_puml_path)
   let cmd = [
+        \ &shell, &shellcmdflag,
         \ s:update_viewer_script_path,
         \ s:jar_path(),
         \ s:viewer_tmp_puml_path,
@@ -136,6 +137,7 @@ function! plantuml_previewer#save_as(...) "{{{
   call writefile(content, s:save_as_tmp_puml_path)
   call mkdir(fnamemodify(save_path, ':p:h'), 'p')
   let cmd = [
+        \ &shell, &shellcmdflag,
         \ s:save_as_script_path,
         \ s:jar_path(),
         \ s:save_as_tmp_puml_path,
