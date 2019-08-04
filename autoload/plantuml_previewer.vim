@@ -18,6 +18,21 @@ let s:viewer_tmp_svg_path = s:viewer_base_path . '/tmp.svg'
 let s:viewer_tmp_js_path = s:viewer_base_path . '/tmp.js'
 let s:viewer_html_path = s:viewer_base_path . '/dist/index.html'
 
+function! plantuml_previewer#dump() "{{{
+  echomsg 'plantuml dump:'
+  echomsg printf(' %s:%s', 's:base_path                ', s:base_path                )
+  echomsg printf(' %s:%s', 's:default_jar_path         ', s:default_jar_path         )
+  echomsg printf(' %s:%s', 's:tmp_path                 ', s:tmp_path                 )
+  echomsg printf(' %s:%s', 's:save_as_script_path      ', s:save_as_script_path      )
+  echomsg printf(' %s:%s', 's:save_as_tmp_puml_path    ', s:save_as_tmp_puml_path    )
+  echomsg printf(' %s:%s', 's:update_viewer_script_path', s:update_viewer_script_path)
+  echomsg printf(' %s:%s', 's:viewer_base_path         ', s:viewer_base_path         )
+  echomsg printf(' %s:%s', 's:viewer_tmp_puml_path     ', s:viewer_tmp_puml_path     )
+  echomsg printf(' %s:%s', 's:viewer_tmp_svg_path      ', s:viewer_tmp_svg_path      )
+  echomsg printf(' %s:%s', 's:viewer_tmp_js_path       ', s:viewer_tmp_js_path       )
+  echomsg printf(' %s:%s', 's:viewer_html_path         ', s:viewer_html_path         )
+endfunction "}}}
+
 function! plantuml_previewer#start() "{{{
   if !executable('java')
     echoerr 'require java'
