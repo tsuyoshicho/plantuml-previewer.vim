@@ -8,16 +8,17 @@ execute join(['function! vital#_plantuml_previewer#Vim#Type#import() abort', pri
 delfunction s:_SID
 " ___vital___
 let s:types = {
-\   'number': 0,
-\   'string': 1,
-\   'func': 2,
-\   'list': 3,
-\   'dict': 4,
-\   'float': 5,
-\   'bool': 6,
-\   'none': 7,
-\   'job': 8,
-\   'channel': 9,
+\   'number'  : 0,
+\   'string'  : 1,
+\   'func'    : 2,
+\   'list'    : 3,
+\   'dict'    : 4,
+\   'float'   : 5,
+\   'bool'    : 6,
+\   'none'    : 7,
+\   'job'     : 8,
+\   'channel' : 9,
+\   'blob'    : 10,
 \ }
 lockvar 1 s:types
 
@@ -32,6 +33,7 @@ let s:type_names = {
 \   '7': 'none',
 \   '8': 'job',
 \   '9': 'channel',
+\  '10': 'blob',
 \ }
 lockvar 1 s:type_names
 
@@ -72,6 +74,9 @@ function! s:_make_is_comparable_cache() abort
   \   exists('*test_null_job') ? test_null_job() : 0,
   \   exists('*test_null_channel') ? test_null_channel() : 0,
   \ ]
+  if has('patch-8.1.0735')
+    let vals += [0z00]
+  endif
 
   let result = []
   for l:V1 in vals

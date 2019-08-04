@@ -1,16 +1,37 @@
-let s:Process = vital#plantuml_previewer#new().import('System.Process')
-let s:Job = vital#plantuml_previewer#new().import('System.Job')
+scriptencoding utf-8
+
+let s:save_cpo = &cpo
+set cpo&vim
+
+let s:Process  = vital#plantuml_previewer#import('System.Process')
+let s:Job      = vital#plantuml_previewer#import('System.Job')
+let s:Filepath = vital#plantuml_previewer#import('System.Filepath')
+
 let s:is_win = has('win32') || has('win64') || has('win95')
 
-let s:base_path = fnameescape(expand("<sfile>:p:h")) . '/..'
+let s:base_path = s:Filepath.abspath(expand("<sfile>:p:h:h"))
 
-let s:default_jar_path = s:base_path . '/lib/plantuml.jar'
+let s:default_jar_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'lib' .  s:Filepath.separator() .
+      \ 'plantuml.jar')
 
-let s:tmp_path = s:base_path . '/tmp'
+let s:tmp_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'tmp')
 
-let s:save_as_script_path = s:base_path . '/script/save-as' . (s:is_win ? '.cmd' : '.sh')
+let s:save_as_script_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'script' .  s:Filepath.separator() .
+      \ 'save-as' . (s:is_win ? '.cmd' : '.sh'))
+let s:save_as_tmp_puml_path = s:Filepath.realpath(
+      \ s:tmp_path . s:Filepath.separator() .
+      \ 'tmp.puml')
 
-let s:update_viewer_script_path = s:base_path . '/script/update-viewer' . (s:is_win ? '.cmd' : '.sh')
+let s:update_viewer_script_path = s:Filepath.realpath(
+      \ s:base_path . s:Filepath.separator() .
+      \ 'script' .  s:Filepath.separator() .
+      \ 'update-viewer' . (s:is_win ? '.cmd' : '.sh'))
 
 let s:watched_bufnr = 0
 
@@ -29,7 +50,7 @@ function! plantuml_previewer#start() "{{{
   call plantuml_previewer#refresh(s:watched_bufnr)
   augroup plantuml_previewer
     autocmd!
-    autocmd BufWritePost *.puml,*.plantuml call plantuml_previewer#refresh(s:watched_bufnr)
+    autocmd BufWritePost * if bufnr('%') == s:watched_bufnr | call plantuml_previewer#refresh(s:watched_bufnr) | endif
   augroup END
 endfunction "}}}
 
@@ -57,37 +78,37 @@ function! plantuml_previewer#copy_viewer_directory() "{{{
   let default_viewer_path = plantuml_previewer#default_viewer_path()
   if viewer_path != default_viewer_path
     if s:is_win
-      call system('xcopy ' . default_viewer_path . ' ' . g:plantuml_previewer#viewer_path . ' /O /X /E /H /K')
+      call system('xcopy ' . default_viewer_path . ' ' . viewer_path . ' /O /X /E /H /K')
     else
-      call system('cp -r ' . default_viewer_path . ' ' . g:plantuml_previewer#viewer_path)
+      call system('cp -r ' . default_viewer_path . ' ' . viewer_path)
     endif
     echom 'copy ' . default_viewer_path . ' -> ' . viewer_path
   endif
 endfunction "}}}
 
 function! plantuml_previewer#default_viewer_path() "{{{
-  return s:base_path . '/viewer'
+  return s:Filepath.realpath(s:base_path . s:Filepath.separator() . 'viewer')
 endfunction "}}}
 
 function! s:viewer_path() "{{{
   let path = get(g:, 'plantuml_previewer#viewer_path', 0)
-  return s:is_zero(path) ? plantuml_previewer#default_viewer_path() : fnameescape(path)
+  return s:is_zero(path) ? plantuml_previewer#default_viewer_path() : path
 endfunction "}}}
 
 function! s:viewer_tmp_puml_path() "{{{
-  return s:viewer_path() . '/tmp.puml'
+  return s:Filepath.realpath(s:viewer_path() . s:Filepath.separator() . 'tmp.puml')
 endfunction "}}}
 
 function! s:viewer_tmp_svg_path() "{{{
-  return s:viewer_path() . '/tmp.svg'
+  return s:Filepath.realpath(s:viewer_path() . s:Filepath.separator() . 'tmp.svg')
 endfunction "}}}
 
 function! s:viewer_tmp_js_path() "{{{
-  return s:viewer_path() . '/tmp.js'
+  return s:Filepath.realpath(s:viewer_path() . s:Filepath.separator() . 'tmp.js')
 endfunction "}}}
 
 function! s:viewer_html_path() "{{{
-  return s:viewer_path() . '/index.html'
+  return s:Filepath.realpath(s:viewer_path() . s:Filepath.separator() . 'index.html')
 endfunction "}}}
 
 function! s:jar_path() "{{{
@@ -122,13 +143,13 @@ function! s:run_in_background(cmd) "{{{
 endfunction "}}}
 
 function! plantuml_previewer#refresh(bufnr) "{{{
-  let puml_src_path = fnamemodify(bufname(a:bufnr), ':p')
+  let puml_src_path = s:Filepath.abspath(bufname(a:bufnr))
   let puml_filename = fnamemodify(puml_src_path, ':t:r')
   let image_type = 'svg'
   let image_ext = s:fmt_to_ext(image_type)
   let output_dir_path = s:tmp_path
-  let output_path = output_dir_path . '/' . puml_filename . '.' . image_ext
-  let finial_path = s:viewer_path() . '/tmp.' . image_ext
+  let output_path = output_dir_path . s:Filepath.separator() . puml_filename . '.' . image_ext
+  let finial_path = s:viewer_path() . s:Filepath.separator() . 'tmp.' . image_ext
   let cmd = [
        \ s:update_viewer_script_path,
        \ s:jar_path(),
@@ -152,21 +173,21 @@ function! plantuml_previewer#save_as(...) "{{{
   let save_path = get(a:000, 0, 0)
   let image_type = get(a:000, 1, 0)
   if s:is_zero(save_path)
-    let source_name = expand('%:t:r')
+    let source_name = s:Filepath.abspath(expand('%:t:r'))
     let save_path = printf("%s.%s", source_name, s:fmt_to_ext(s:save_format()))
   else
-    let save_path = fnamemodify(save_path, ':p')
+    let save_path = s:Filepath.abspath(save_path)
   endif
   if s:is_zero(image_type)
     let ext = fnamemodify(save_path, ':e')
     let image_type = ext == '' ? s:save_format() : s:ext_to_fmt(ext)
   endif
 
-  let puml_src_path = expand('%:p')
+  let puml_src_path = s:Filepath.abspath(bufname('%'))
   let puml_filename = fnamemodify(puml_src_path, ':t:r')
   let image_ext = s:fmt_to_ext(image_type)
   let output_dir_path = s:tmp_path
-  let output_path = output_dir_path . '/' . puml_filename . '.' . image_ext
+  let output_path = output_dir_path . s:Filepath.separator() . puml_filename . '.' . image_ext
   call mkdir(fnamemodify(save_path, ':p:h'), 'p')
   let cmd = [
         \ s:save_as_script_path,
@@ -179,3 +200,6 @@ function! plantuml_previewer#save_as(...) "{{{
         \ ]
   call s:run_in_background(cmd)
 endfunction "}}}
+
+let &cpo = s:save_cpo
+unlet s:save_cpo
